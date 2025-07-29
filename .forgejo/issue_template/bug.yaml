@@ -1,0 +1,49 @@
+---
+name: 'Bug'
+about: 'This template is for reporting a Bug.'
+title: '[Bug]: '
+ref: 'main'
+labels:
+  - bug
+body:
+  - type: dropdown
+    id: game
+    attributes:
+      label: Which game(s) are you experiencing this Bug in?
+      multiple: true
+      options:
+        - Dark Souls PTDE
+        - Dark Souls Remastered
+        - Dark Souls II
+        - Dark Souls II SOTFS
+        - Dark Souls III
+        - Sekiro
+        - Elden Ring
+    validations:
+      required: true
+  - type: checkboxes
+    id: appver
+    attributes:
+      label: Prerequisites.
+      options:
+        - label: I have read the first tidbit from the README and understand where the program intends to work and not work.
+          required: true
+        - label: I have verified that the AppVer in the offsets.yaml is the same as the one displayed in-game.
+          required: true
+        - label: I have verified that the sha256 in the offsets.yaml is the same as my EXE's sha256.
+          required: true
+  - type: textarea
+    id: bug-explaination
+    attributes:
+      label: Explain the Bug.
+      placeholder: It no worky.
+    validations:
+      required: true
+  - type: textarea
+    id: bug-reproduction
+    attributes:
+      label: Reproduction Steps.
+      placeholder: You do da ting.
+    validations:
+      required: true
+---

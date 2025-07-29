@@ -1,0 +1,33 @@
+---
+name: 'Game Update'
+about: 'This template is for reporting a Game Update.'
+title: '[Game Update]: GAMENAME NEWAPPVER'
+ref: 'main'
+labels:
+  - offsets
+body:
+  - type: dropdown
+    id: game
+    attributes:
+      label: Which game received the update?
+      multiple: false
+      options:
+        - Dark Souls PTDE
+        - Dark Souls Remastered
+        - Dark Souls II
+        - Dark Souls II SOTFS
+        - Dark Souls III
+        - Sekiro
+        - Elden Ring
+    validations:
+      required: true
+  - type: checkboxes
+    id: appver
+    attributes:
+      label: Prerequisites.
+      options:
+        - label: I have verified that the AppVer in the offsets.yaml is different to the one displayed in-game.
+          required: true
+        - label: I have verified that the sha256 in the offsets.yaml is different than the current EXE's sha256.
+          required: true
+---

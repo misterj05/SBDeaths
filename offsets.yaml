@@ -1,0 +1,54 @@
+# This file is intended for developers. Normal users should not modify it.
+# - Developers or experienced users can add or update offsets here without modifying or recompiling the Rust sources.
+# - If you're not familiar with Rust, you can still contribute offsets without editing any Rust code.
+
+# AppVer:
+# sha256:
+DARKSOULS.exe:
+  x86_base_offset: 0x1C8A530
+  x86_offsets: [0x98]
+  base_offset: null
+  offsets: null
+
+# AppVer: 1.03.1
+# sha256: a45aaa36dd2f6cc151670a639ea5547043cf38ea79ff4178b963c6ed71f98d7b
+DarkSoulsRemastered.exe:
+  x86_base_offset: null
+  x86_offsets: null
+  base_offset: 0x1C8A530
+  offsets: [0x98]
+
+DarkSoulsII.exe:
+  # AppVer:
+  # sha256:
+  x86_base_offset: 0x1150414
+  x86_offsets: [0x74, 0xB8, 0x34, 0x4, 0x28C, 0x100]
+
+  # AppVer: 1.03
+  # sha256: 0045931b8914504531b7864a9488d396dc50cbaf524964016e1d69c3d1173131
+  base_offset: 0x16148F0
+  offsets: [0xD0, 0x490, 0x104]
+
+# AppVer: 1.15.2
+# sha256: ef5e07c55222f14ffddecf2c724a0c2a95cef0d4da0e075b0de0bb108b69498c
+DarkSoulsIII.exe:
+  x86_base_offset: null
+  x86_offsets: null
+  base_offset: 0x47572B8
+  offsets: [0x98]
+
+# AppVer: 1.06
+# sha256: 637aca527538c0ec6e1f136c8ed66046e95dfbdbb1f51926e134d9916398b856
+sekiro.exe:
+  x86_base_offset: null
+  x86_offsets: null
+  base_offset: 0x3D5AAC0
+  offsets: [0x90]
+
+# AppVer: 1.16
+# sha256: 5d0b85d2bb86b61632705023690b3bd5c4d0bae06308db2eed50849bd37db611
+eldenring.exe:
+  x86_base_offset: null
+  x86_offsets: null
+  base_offset: 0x3D5DF38
+  offsets: [0x94]
