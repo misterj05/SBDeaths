@@ -7,8 +7,13 @@ use std::io::stdin;
 use std::fs::File;
 use std::ffi::OsString;
 
-#[cfg(target_os = "windows")]
-use std::path::{Path, PathBuf};
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "windows")] {
+        use std::path::{Path, PathBuf};
+        use std::thread::sleep;
+        use std::time::Duration;
+    }
+}
 
 use crate::{PROGRAM_NAME, PROCESS_NAMES};
 
