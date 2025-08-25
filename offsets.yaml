@@ -45,8 +45,8 @@ sekiro.exe:
   base_offset: 0x3D5AAC0
   offsets: [0x90]
 
-# AppVer: 1.16
-# sha256: 5d0b85d2bb86b61632705023690b3bd5c4d0bae06308db2eed50849bd37db611
+# AppVer: 1.16.1
+# sha256: fafb931f886d5c8daebd93ba9ebade37c9a8d955447673b65d451f3af199e545
 eldenring.exe:
   x86_base_offset: null
   x86_offsets: null
