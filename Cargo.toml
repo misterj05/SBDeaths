@@ -4,11 +4,13 @@ version = "1.0.1"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.99"
+cfg-if = "1.0.1"
 serde = { version = "1.0.219", features = ["derive"] }
+
 serde_yml = "0.0.12" # Used for deserialization of the offsets.
 sysinfo = "0.35.0" # Used for grabbing a correct PID to one of the Souls games.
 libmem = { git = "https://github.com/rdbo/libmem.git" } # Used for the pointer arithmetic.
-cfg-if = "1.0.1"
 
 [target.'cfg(windows)'.dependencies]
 steamlocate = "2.0.1" # Used for locating where the Elden Ring install is and using that to construct a launch option for the user.

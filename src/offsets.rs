@@ -1,7 +1,9 @@
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
+
+use serde::Deserialize;
+use anyhow::Result;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct GameOffsets {
@@ -13,7 +15,7 @@ pub struct GameOffsets {
 
 pub type OffsetMap = HashMap<String, GameOffsets>;
 
-pub fn deserialize_offsets() -> Result<OffsetMap, Box<dyn std::error::Error>> {
+pub fn deserialize_offsets() -> Result<OffsetMap> {
     let file = File::open("offsets.yaml")?;
     let reader = BufReader::new(file);
 

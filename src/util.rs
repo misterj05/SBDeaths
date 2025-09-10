@@ -1,11 +1,12 @@
 use std::collections::HashSet;
 use std::fs;
-use std::env;
-use std::io::Write;
-use std::process::exit;
-use std::io::stdin;
 use std::fs::File;
+use std::env;
+use std::io::{Write, Read, stdin};
+use std::process::exit;
 use std::ffi::OsString;
+
+use anyhow::{anyhow, Result};
 
 cfg_if::cfg_if! {
     if #[cfg(target_os = "windows")] {
@@ -42,15 +43,19 @@ pub fn get_pid() -> (Option<sysinfo::Pid>, Option<OsString>) {
     (None, None)
 }
 
-pub fn write_file(name: &str, val: u32) -> std::io::Result<()> {
-    match File::open("template.txt") {
+pub fn write_file(name: &str, val: u32) -> Result<()> {
+    match File::open(name) {
         Ok(..) => {
             let raw_template = fs::read_to_string("template.txt")?;
             let replaced_template = raw_template.replace("{}", &val.to_string());
             if let Ok(mut f) = File::create(name) {
                 if let Err(e) = f.write_all(replaced_template.to_string().as_bytes()) {
-                    println!("{}", e);
-                    return Err(e)
+                     return Err(anyhow!(
+                         "Failed to write file named: {}\n\
+                         Error Value: {}\n\
+                         File existed before write attempt.",
+                         name, e
+                     ))
                 }
             }
             Ok(())
@@ -58,8 +63,12 @@ pub fn write_file(name: &str, val: u32) -> std::io::Result<()> {
         Err(..) => {
             if let Ok(mut f) = File::create(name) {
                 if let Err(e) = f.write_all(val.to_string().as_bytes()) {
-                    println!("{}", e);
-                    return Err(e)
+                    return Err(anyhow!(
+                        "Failed to write file named: {}\n\
+                        Error Value: {}\n\
+                        File did not exist before write attempt.",
+                        name, e
+                    ))
                 }
             }
             Ok(())
@@ -105,7 +114,7 @@ pub fn loop_until_correct_input(correct_inputs: Vec<&str>) -> &str {
     }
 }
 
-pub fn is_cur_dir_empty() -> std::io::Result<bool> {
+pub fn is_cur_dir_empty() -> Result<bool> {
     let current_dir = env::current_dir()?;
     let files = fs::read_dir(current_dir)?;
 
@@ -162,14 +171,17 @@ pub fn handle_empty_dir(empty: bool) {
     } else if input_given == "n" {
         exit(0)
     }
+    unreachable!()
 }
 
 #[cfg(target_os = "windows")]
-pub fn locate_er() -> Result<PathBuf, Box<dyn std::error::Error>> {
+pub fn locate_er() -> Result<PathBuf> {
     const ER_APP_ID: u32 = 1_245_620;
     let steam_dir = steamlocate::SteamDir::locate()?;
 
-    let Some((elden_ring_app, er_lib)) = steam_dir.find_app(ER_APP_ID)? else { return Err("Could not find Elden Ring directory.".into()) };
+    let Some((elden_ring_app, er_lib)) = steam_dir.find_app(ER_APP_ID)? else {
+        return Err(anyhow!("Could not find Elden Ring directory."))
+    };
     let er_dir = er_lib.resolve_app_dir(&elden_ring_app);
     let expected_rel_path = Path::new("steamapps").join("common").join("ELDEN RING");
     assert!(er_dir.ends_with(&expected_rel_path));
