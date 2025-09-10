@@ -8,6 +8,13 @@ use libmem::*;
 mod offsets;
 mod util;
 
+cfg_if::cfg_if! {
+    if #[cfg(feature = "updater")] {
+        mod updater;
+        use updater::*;
+    }
+}
+
 use crate::util::*;
 
 macro_rules! dbg {
@@ -61,6 +68,12 @@ fn main() {
     match is_cur_dir_empty() {
         Ok(empty) => {
             handle_empty_dir(empty);
+
+            #[cfg(feature = "updater")]
+            #[cfg(not(debug_assertions))]
+            if let Err(e) = self_update() {
+                println!("Error: {}", e)
+            }
         }
         Err(e) => {
             println!("Error: {}", e)

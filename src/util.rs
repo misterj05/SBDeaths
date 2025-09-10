@@ -3,14 +3,16 @@ use std::fs;
 use std::fs::File;
 use std::env;
 use std::io::{Write, Read, stdin};
+use std::path::Path;
 use std::process::exit;
 use std::ffi::OsString;
 
 use anyhow::{anyhow, Result};
+use sha2::{Digest, Sha256};
 
 cfg_if::cfg_if! {
     if #[cfg(target_os = "windows")] {
-        use std::path::{Path, PathBuf};
+        use std::path::{PathBuf};
         use std::thread::sleep;
         use std::time::Duration;
     }
@@ -74,6 +76,24 @@ pub fn write_file(name: &str, val: u32) -> Result<()> {
             Ok(())
         }
     }
+}
+
+pub fn sha256_bytes(data: &[u8]) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    return hasher.finalize().to_vec()
+}
+
+pub fn sha256_file<P: AsRef<Path>>(path: P) -> Result<Vec<u8>> {
+    let mut f = File::open(path)?;
+    let mut hasher = Sha256::new();
+    let mut buf = [0u8; 8 * 1024];
+    loop {
+        let n = f.read(&mut buf)?;
+        if n == 0 { break; }
+        hasher.update(&buf[..n]);
+    }
+    return Ok(hasher.finalize().to_vec())
 }
 
 pub fn loop_until_correct_input(correct_inputs: Vec<&str>) -> &str {
