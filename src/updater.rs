@@ -2,13 +2,14 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Path;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use reqwest::blocking::get;
 
-use crate::util::{sha256_bytes, sha256_file, loop_until_correct_input};
 use crate::PROGRAM_NAME;
+use crate::util::{loop_until_correct_input, sha256_bytes, sha256_file};
 
-const URL: &str = "https://codeberg.org/misterj05/SBDeaths/raw/branch/dev/offsets.yaml";
+const URL: &str =
+    "https://codeberg.org/misterj05/SBDeaths/raw/branch/dev/offsets.yaml";
 
 fn fetch_file(url: &str) -> Result<Vec<u8>> {
     let mut resp = get(url);
@@ -20,7 +21,7 @@ fn fetch_file(url: &str) -> Result<Vec<u8>> {
                     HTTP Status Code was not a success code.\n\
                     Status Code: {}",
                     r.status()
-                ))
+                ));
             }
             resp = Ok(r);
         }
@@ -32,12 +33,12 @@ fn fetch_file(url: &str) -> Result<Vec<u8>> {
                 If so it's likely the source website for {} is down right now.",
                 e,
                 PROGRAM_NAME
-            ))
+            ));
         }
     }
     let mut buf = Vec::new();
     resp.unwrap().read_to_end(&mut buf)?;
-    return Ok(buf)
+    return Ok(buf);
 }
 
 fn replace_if_different(url: &str, local_path: &Path) -> Result<()> {
@@ -56,13 +57,17 @@ fn replace_if_different(url: &str, local_path: &Path) -> Result<()> {
 
     if different {
         println!();
-        println!("An updated version of the offsets.yaml is available.\n\
+        println!(
+            "An updated version of the offsets.yaml is available.\n\
             (The file that lets the program know how to find the death value.)\n\
             You usually want to update this file as it will contain \
-            updates for the games in it.");
+            updates for the games in it."
+        );
         println!();
-        println!("If you modified the offsets.yaml yourself this \
-            is likely a false positive.");
+        println!(
+            "If you modified the offsets.yaml yourself this \
+            is likely a false positive."
+        );
         println!();
         println!("Would you like to update it? y or n?");
         println!();
@@ -84,10 +89,10 @@ fn replace_if_different(url: &str, local_path: &Path) -> Result<()> {
         println!("Updated {:?}", local_path);
     }
 
-    return Ok(())
+    return Ok(());
 }
 
 pub fn self_update() -> Result<()> {
     replace_if_different(URL, Path::new("offsets.yaml"))?;
-    return Ok(())
+    return Ok(());
 }

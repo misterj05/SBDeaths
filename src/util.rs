@@ -1,13 +1,13 @@
 use std::collections::HashSet;
+use std::env;
+use std::ffi::OsString;
 use std::fs;
 use std::fs::File;
-use std::env;
-use std::io::{Write, Read, stdin};
+use std::io::{Read, Write, stdin};
 use std::path::Path;
 use std::process::exit;
-use std::ffi::OsString;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use sha2::{Digest, Sha256};
 
 cfg_if::cfg_if! {
@@ -18,9 +18,9 @@ cfg_if::cfg_if! {
     }
 }
 
-use crate::{PROGRAM_NAME, PROCESS_NAMES};
+use crate::{PROCESS_NAMES, PROGRAM_NAME};
 
-#[cfg (debug_assertions)]
+#[cfg(debug_assertions)]
 pub fn print_all_processes() {
     let mut sys = sysinfo::System::new();
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
@@ -49,15 +49,19 @@ pub fn write_file(name: &str, val: u32) -> Result<()> {
     match File::open(name) {
         Ok(..) => {
             let raw_template = fs::read_to_string("template.txt")?;
-            let replaced_template = raw_template.replace("{}", &val.to_string());
+            let replaced_template =
+                raw_template.replace("{}", &val.to_string());
             if let Ok(mut f) = File::create(name) {
-                if let Err(e) = f.write_all(replaced_template.to_string().as_bytes()) {
-                     return Err(anyhow!(
-                         "Failed to write file named: {}\n\
+                if let Err(e) =
+                    f.write_all(replaced_template.to_string().as_bytes())
+                {
+                    return Err(anyhow!(
+                        "Failed to write file named: {}\n\
                          Error Value: {}\n\
                          File existed before write attempt.",
-                         name, e
-                     ))
+                        name,
+                        e
+                    ));
                 }
             }
             Ok(())
@@ -69,8 +73,9 @@ pub fn write_file(name: &str, val: u32) -> Result<()> {
                         "Failed to write file named: {}\n\
                         Error Value: {}\n\
                         File did not exist before write attempt.",
-                        name, e
-                    ))
+                        name,
+                        e
+                    ));
                 }
             }
             Ok(())
@@ -81,7 +86,7 @@ pub fn write_file(name: &str, val: u32) -> Result<()> {
 pub fn sha256_bytes(data: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(data);
-    return hasher.finalize().to_vec()
+    return hasher.finalize().to_vec();
 }
 
 pub fn sha256_file<P: AsRef<Path>>(path: P) -> Result<Vec<u8>> {
@@ -90,10 +95,12 @@ pub fn sha256_file<P: AsRef<Path>>(path: P) -> Result<Vec<u8>> {
     let mut buf = [0u8; 8 * 1024];
     loop {
         let n = f.read(&mut buf)?;
-        if n == 0 { break; }
+        if n == 0 {
+            break;
+        }
         hasher.update(&buf[..n]);
     }
-    return Ok(hasher.finalize().to_vec())
+    return Ok(hasher.finalize().to_vec());
 }
 
 pub fn loop_until_correct_input(correct_inputs: Vec<&str>) -> &str {
@@ -103,7 +110,7 @@ pub fn loop_until_correct_input(correct_inputs: Vec<&str>) -> &str {
         let _ = stdin().read_line(&mut buffer);
         for ci in &correct_inputs {
             if buffer.trim() == *ci {
-                return *ci
+                return *ci;
             }
         }
         println!("That was not correct.");
@@ -179,15 +186,21 @@ pub fn handle_empty_dir(empty: bool) {
     if empty == true {
         return;
     }
-    println!("{} is intended to be ran in an empty directory because it \
-            makes a few files wherever the program is placed.", PROGRAM_NAME);
-    println!("Would you like to continue the program? y or n? \
-            This is so you have a chance to move it to an empty directory before any files are made.");
+    println!(
+        "{} is intended to be ran in an empty directory because it \
+        makes a few files wherever the program is placed.",
+        PROGRAM_NAME
+    );
+    println!(
+        "Would you like to continue the program? y or n? \
+        This is so you have a chance to move it to an empty \
+        directory before any files are made."
+    );
 
     let correct_inputs = Vec::from(["y", "n"]);
     let input_given = loop_until_correct_input(correct_inputs);
     if input_given == "y" {
-        return
+        return;
     } else if input_given == "n" {
         exit(0)
     }
@@ -200,16 +213,19 @@ pub fn locate_er() -> Result<PathBuf> {
     let steam_dir = steamlocate::SteamDir::locate()?;
 
     let Some((elden_ring_app, er_lib)) = steam_dir.find_app(ER_APP_ID)? else {
-        return Err(anyhow!("Could not find Elden Ring directory."))
+        return Err(anyhow!("Could not find Elden Ring directory."));
     };
     let er_dir = er_lib.resolve_app_dir(&elden_ring_app);
-    let expected_rel_path = Path::new("steamapps").join("common").join("ELDEN RING");
+    let expected_rel_path =
+        Path::new("steamapps").join("common").join("ELDEN RING");
     assert!(er_dir.ends_with(&expected_rel_path));
     Ok(er_dir)
 }
 
 pub fn handle_er_ac(proc_name: &str) -> bool {
-    if !proc_name.contains("start_protected") && !proc_name.contains("eldenring"){
+    if !proc_name.contains("start_protected")
+        && !proc_name.contains("eldenring")
+    {
         return false;
     }
     println!();
@@ -217,33 +233,55 @@ pub fn handle_er_ac(proc_name: &str) -> bool {
     println!("PLEASE MAKE SURE YOU ARE DISABLING ELDEN RING'S ANTI-CHEAT!!!!");
     println!();
 
-    #[cfg(target_os = "linux")] {
+    #[cfg(target_os = "linux")]
+    {
         println!("On Linux you can do so by using this launch option:");
         println!();
-        println!("echo \"%command%\" | sed \'s/start_protected_game.exe/eldenring.exe/\' | sh");
+        println!(
+            "echo \"%command%\" | sed \'s/start_protected_game.exe/eldenring.exe/\' | sh"
+        );
         println!();
-        println!("Or by replacing start_protected_game.exe with a copy of \
-                eldenring.exe renamed to start_protected_game.exe in the game folder.");
-        println!("Or any Wine/Proton trickery that gets eldenring.exe \
-                to launch instead of start_protected_game.exe.");
+        println!(
+            "Or by replacing start_protected_game.exe \
+            with a copy of eldenring.exe renamed to \
+            start_protected_game.exe in the game folder."
+        );
+        println!(
+            "Or any Wine/Proton trickery that gets eldenring.exe \
+            to launch instead of start_protected_game.exe."
+        );
     }
 
-    #[cfg(target_os = "windows")] {
+    #[cfg(target_os = "windows")]
+    {
         println!("On Windows you can do so by using a launch option.");
         let dir = locate_er();
         match dir {
             Ok(d) => {
                 dbg!(&d);
                 let full_path = d.join("Game").join("eldenring.exe");
-                println!("Copy and paste this into Elden Ring's launch options on Steam.");
-                println!("{}{}{}{}", '\"', full_path.display(), '\"', " %command%");
+                println!(
+                    "Copy and paste this into Elden Ring's launch options on Steam."
+                );
+                println!(
+                    "{}{}{}{}",
+                    '\"',
+                    full_path.display(),
+                    '\"',
+                    " %command%"
+                );
             }
             Err(e) => {
                 dbg!(e);
-                println!("It must be in this format INCLUDING THE QUOTES: \
-                \"THE_FULL_PATH_TO_ELDENRING.EXE\" %command%");
-                println!("Example: \
-                \"C:\\Program Files (x86)\\Steam\\steamapps\\common\\ELDEN RING\\Game\\eldenring.exe\" %command%");
+                println!(
+                    "It must be in this format INCLUDING THE QUOTES: \
+                    \"THE_FULL_PATH_TO_ELDENRING.EXE\" %command%"
+                );
+                println!(
+                    "Example: \
+                    \"C:\\Program Files (x86)\\Steam\\steamapps\\common\\\
+                    ELDEN RING\\Game\\eldenring.exe\" %command%"
+                );
             }
         }
 
@@ -252,22 +290,30 @@ pub fn handle_er_ac(proc_name: &str) -> bool {
         // so on Windows the behaviour is to quit until EAC is correctly
         // disabled so it can be read as "eldenring.exe" properly.
         if proc_name == "start_protected_game.exe" {
-            println!("Please restart {} after you have disabled Elden Ring's Anti-Cheat.", PROGRAM_NAME);
+            println!(
+                "Please restart {} after you have disabled Elden Ring's Anti-Cheat.",
+                PROGRAM_NAME
+            );
             sleep(Duration::from_secs(600));
             exit(0);
         }
     }
 
     println!();
-    println!("Please type \"Yes, I understand.\" to confirm you understand the above text and \n\
-            if you haven't disabled Anti-Cheat beyond this point you are highly likely to be banned by the game.");
+    println!(
+        "Please type \"Yes, I understand.\" to confirm you understand \
+        the above text and \n if you haven't disabled Anti-Cheat beyond \
+        this point you are highly likely to be banned by the game."
+    );
     println!();
 
     let correct_inputs = Vec::from(["Yes, I understand."]);
     let input_given = loop_until_correct_input(correct_inputs);
     if input_given == "Yes, I understand." {
         println!();
-        println!("The program is now working and reading deaths for Elden Ring.");
+        println!(
+            "The program is now working and reading deaths for Elden Ring."
+        );
         println!("This warning will not show again.");
         println!();
         if let Err(e) = write_file("er_warning_passed", 0) {

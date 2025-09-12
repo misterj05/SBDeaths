@@ -1,7 +1,7 @@
+use std::fs::File;
+use std::io::prelude::*;
 use std::thread::sleep;
 use std::time::Duration;
-use std::io::prelude::*;
-use std::fs::File;
 
 use libmem::*;
 
@@ -59,7 +59,13 @@ macro_rules! good_or_continue {
 }
 
 pub const PROGRAM_NAME: &str = "SBDeaths";
-pub const PROCESS_NAMES: [&str; 5] = ["DarkSouls", "DARKSOULS", "sekiro", "start_protected_game", "eldenring"];
+pub const PROCESS_NAMES: [&str; 5] = [
+    "DarkSouls",
+    "DARKSOULS",
+    "sekiro",
+    "start_protected_game",
+    "eldenring",
+];
 
 fn main() {
     let mut prev_deaths: u32 = 0;
@@ -99,12 +105,19 @@ fn main() {
     println!();
     println!("The program is working in the background, keep the window open.");
     println!();
-    println!("Your death count will be written to a txt file called \
-            {}.txt in the same folder where you ran this program.", PROGRAM_NAME);
-    println!("You can display the file in OBS by adding a Text Source \
-            and selecting the \"From File\" option.");
-    println!("The template.txt will be used as the template for the final .txt file, \
-            all instances of \"{{}}\" will be replaced with the death count.");
+    println!(
+        "Your death count will be written to a txt file called \
+        {}.txt in the same folder where you ran this program.",
+        PROGRAM_NAME
+    );
+    println!(
+        "You can display the file in OBS by adding a Text Source \
+        and selecting the \"From File\" option."
+    );
+    println!(
+        "The template.txt will be used as the template for the final .txt file, \
+        all instances of \"{{}}\" will be replaced with the death count."
+    );
     println!();
 
     loop {
@@ -153,7 +166,8 @@ fn main() {
             // and DS3 gets trimmed to "DarkSoulsIII.ex"
             // which causes get_offsets_from_name to fail at
             // finding a correct entry in the OffsetMap.
-            #[cfg(target_os = "linux")] {
+            #[cfg(target_os = "linux")]
+            {
                 if proc_name.contains("DarkSoulsRemast") {
                     module_name = "DarkSoulsRemastered.exe"
                 } else if proc_name.contains("DarkSoulsII") {
@@ -167,7 +181,8 @@ fn main() {
                 }
             }
 
-            #[cfg(target_os = "windows")] {
+            #[cfg(target_os = "windows")]
+            {
                 if proc_name == e.0 {
                     module_name = e.0
                 }
@@ -241,10 +256,7 @@ fn main() {
         dbg!(pointer);
 
         loop {
-            let val = read_memory_ex::<u32>(
-                &game_process,
-                pointer
-            );
+            let val = read_memory_ex::<u32>(&game_process, pointer);
 
             if let Some(deaths) = val {
                 dbg!(deaths);
@@ -257,8 +269,8 @@ fn main() {
 
                     if let Err(e) = write_file(
                         format!("{}.txt", PROGRAM_NAME).as_str(),
-                        deaths
-                        ) {
+                        deaths,
+                    ) {
                         println!("{}", e);
                     }
                 }

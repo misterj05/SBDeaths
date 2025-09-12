@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 
-use serde::Deserialize;
 use anyhow::Result;
+use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct GameOffsets {
@@ -24,7 +24,10 @@ pub fn deserialize_offsets() -> Result<OffsetMap> {
     Ok(offset_map)
 }
 
-pub fn get_offsets_from_name(offset_map: OffsetMap, name: &str) -> Option<GameOffsets> {
+pub fn get_offsets_from_name(
+    offset_map: OffsetMap,
+    name: &str,
+) -> Option<GameOffsets> {
     for e in offset_map {
         if e.0 == name {
             return Some(e.1);
