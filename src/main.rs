@@ -261,11 +261,14 @@ fn main() {
             if let Some(deaths) = val {
                 dbg!(deaths);
                 if prev_deaths != deaths && deaths != 0 {
-                    println!(
-                        "{}: {}",
+                    print!(
+                        "\r {}: {} ",
                         main_module.name.trim_end_matches(".exe"),
                         deaths
                     );
+                    if let Err(e) = std::io::stdout().flush() {
+                        println!("{}", e);
+                    }
 
                     if let Err(e) = write_file(
                         format!("{}.txt", PROGRAM_NAME).as_str(),
@@ -277,6 +280,14 @@ fn main() {
                 prev_deaths = deaths;
                 sleep(Duration::from_secs(1));
             } else {
+                let mut clear_line_string: String = String::from("");
+                for _ in 0..=60 {
+                    clear_line_string.push(' ');
+                }
+                print!("\r{}\r", clear_line_string);
+                if let Err(e) = std::io::stdout().flush() {
+                    println!("{}", e);
+                }
                 break;
             }
         }
