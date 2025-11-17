@@ -17,6 +17,7 @@ sysinfo = "0.35.0" # Used for grabbing a correct PID to one of the Souls games.
 libmem = { git = "https://github.com/rdbo/libmem.git" } # Used for the pointer arithmetic.
 sha2 = "0.10.9" # Used for hashing the offsets.yaml to detect that it potentially needs an update.
 reqwest = { version = "0.12.23", features = ["blocking"] } # Used to grab the offsets.yaml from the source repo.
+directories = "6.0.0" # Used to integrate a platform agnostic data directory for non-portable use.
 
 [target.'cfg(windows)'.dependencies]
 steamlocate = "2.0.1" # Used for locating where the Elden Ring install is and using that to construct a launch option for the user.

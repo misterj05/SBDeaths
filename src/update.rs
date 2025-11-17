@@ -1,6 +1,6 @@
 use std::fs::{self, File};
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Result, anyhow};
 use reqwest::blocking::get;
@@ -52,7 +52,7 @@ fn replace_if_different(url: &str, local_path: &Path) -> Result<()> {
             Err(_) => true,
         }
     } else {
-        true
+        false
     };
 
     if different {
@@ -75,7 +75,7 @@ fn replace_if_different(url: &str, local_path: &Path) -> Result<()> {
         let correct_inputs = Vec::from(["y", "n"]);
         let input_given = loop_until_correct_input(correct_inputs);
         if input_given == "n" {
-            println!("Did NOT update {:?}", local_path);
+            println!("Did NOT update.");
             return Ok(());
         }
 
@@ -86,13 +86,27 @@ fn replace_if_different(url: &str, local_path: &Path) -> Result<()> {
             tmp.flush()?;
         }
         fs::rename(&tmp_path, local_path)?;
-        println!("Updated {:?}", local_path);
+        println!("Update was successful.");
     }
 
     return Ok(());
 }
 
-pub fn self_update() -> Result<()> {
-    replace_if_different(URL, Path::new("offsets.yaml"))?;
+pub fn self_update(data_path: &PathBuf) -> Result<()> {
+    let offsets_path = data_path.join("offsets.yaml");
+    if !offsets_path.exists() {
+        println!();
+        println!("You do not have an offsets.yaml in your data path.");
+        println!("Would you like to download the latest version? y or n?");
+        println!();
+        let correct_inputs = Vec::from(["y", "n"]);
+        let input_given = loop_until_correct_input(correct_inputs);
+        if input_given == "y" {
+            let downloaded_offsets = fetch_file(&offsets_url)?;
+            let mut f = File::create(&offsets_path)?;
+            f.write_all(&downloaded_offsets)?;
+        }
+    }
+    replace_if_different(URL, offsets_path.as_path())?;
     return Ok(());
 }

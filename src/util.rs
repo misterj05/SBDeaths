@@ -1,22 +1,16 @@
 use std::collections::HashSet;
-use std::env;
+use std::env::{current_dir, current_exe};
 use std::ffi::OsString;
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Write, stdin};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::exit;
+use std::thread::sleep;
+use std::time::Duration;
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail, ensure};
 use sha2::{Digest, Sha256};
-
-cfg_if::cfg_if! {
-    if #[cfg(target_os = "windows")] {
-        use std::path::{PathBuf};
-        use std::thread::sleep;
-        use std::time::Duration;
-    }
-}
 
 use crate::{PROCESS_NAMES, PROGRAM_NAME};
 
@@ -29,6 +23,16 @@ pub fn print_all_processes() {
             println!("PID: {} Process Name: {}", pid, pn);
         }
     }
+}
+
+pub fn exit_with_error(msg: Option<String>) {
+    match msg {
+        Some(m) => println!("An unrecoverable error occured: {}", m),
+        None => println!("An unrecoverable error occured"),
+    }
+    println!("Exiting in 10 seconds");
+    sleep(Duration::from_secs(10));
+    exit(1);
 }
 
 pub fn get_pid() -> (Option<sysinfo::Pid>, Option<OsString>) {
@@ -45,13 +49,13 @@ pub fn get_pid() -> (Option<sysinfo::Pid>, Option<OsString>) {
     (None, None)
 }
 
-pub fn write_file(name: &str, val: u32) -> Result<()> {
-    match File::open(name) {
+pub fn write_file(path: &PathBuf, name: &str, val: u32) -> Result<()> {
+    match File::open(path.join(name)) {
         Ok(..) => {
-            let raw_template = fs::read_to_string("template.txt")?;
+            let raw_template = fs::read_to_string(path.join("template.txt"))?;
             let replaced_template =
                 raw_template.replace("{}", &val.to_string());
-            if let Ok(mut f) = File::create(name) {
+            if let Ok(mut f) = File::create(path.join(name)) {
                 if let Err(e) =
                     f.write_all(replaced_template.to_string().as_bytes())
                 {
@@ -67,7 +71,7 @@ pub fn write_file(name: &str, val: u32) -> Result<()> {
             Ok(())
         }
         Err(..) => {
-            if let Ok(mut f) = File::create(name) {
+            if let Ok(mut f) = File::create(path.join(name)) {
                 if let Err(e) = f.write_all(val.to_string().as_bytes()) {
                     return Err(anyhow!(
                         "Failed to write file named: {}\n\
@@ -81,6 +85,40 @@ pub fn write_file(name: &str, val: u32) -> Result<()> {
             Ok(())
         }
     }
+}
+
+pub fn copy_file_to_dir<P: AsRef<Path>>(
+    file_path: P,
+    dir_path: P,
+) -> Result<()> {
+    let file_path = file_path.as_ref();
+    let dir_path = dir_path.as_ref();
+
+    #[cfg(debug_assertions)]
+    ensure!(file_path != dir_path, "both paths provided were the same");
+
+    let file_exists = file_path.try_exists()?;
+    ensure!(file_exists, "file_path does not exist");
+    ensure!(file_path.is_file(), "file_path does not point to a file");
+
+    let dir_exists = dir_path.try_exists()?;
+    ensure!(dir_exists, "dir_path does not exist");
+    ensure!(dir_path.is_dir(), "dir_path does not point to a dir");
+
+    let filename = if let Some(filename) = file_path.iter().last() {
+        filename
+    } else {
+        bail!("could not preserve filename");
+    };
+
+    let mut f = File::open(file_path)?;
+    let mut df = File::create(dir_path.join(filename))?;
+    let buf = &mut vec![];
+    f.read_to_end(buf)?;
+    df.write_all(buf)?;
+    df.flush()?;
+
+    return Ok(());
 }
 
 pub fn sha256_bytes(data: &[u8]) -> Vec<u8> {
@@ -141,9 +179,11 @@ pub fn loop_until_correct_input(correct_inputs: Vec<&str>) -> &str {
     }
 }
 
-pub fn is_cur_dir_empty() -> Result<bool> {
-    let current_dir = env::current_dir()?;
-    let files = fs::read_dir(current_dir)?;
+pub fn is_dir_empty<P: AsRef<Path>>(path: P) -> Result<bool> {
+    let path = path.as_ref();
+    ensure!(path.is_dir(), "path is not a dir");
+
+    let files = fs::read_dir(path)?;
 
     let exe_filename = format!("{}.exe", PROGRAM_NAME);
     let txt_filename = format!("{}.txt", PROGRAM_NAME);
@@ -156,9 +196,6 @@ pub fn is_cur_dir_empty() -> Result<bool> {
         "offsets.yaml",
     ]);
 
-    let mut found_disallowed = false;
-    let mut found_cargo_toml = false;
-
     for f in files {
         let f = f?;
         let file_name = match f.file_name().into_string() {
@@ -166,45 +203,40 @@ pub fn is_cur_dir_empty() -> Result<bool> {
             Err(_) => return Ok(false),
         };
 
-        if file_name == "Cargo.toml" {
-            found_cargo_toml = true;
-        } else if !allowlist.contains(file_name.as_str()) {
-            found_disallowed = true;
+        if !allowlist.contains(file_name.as_str()) {
+            return Ok(false);
         }
     }
 
-    if found_cargo_toml {
-        Ok(true)
-    } else if found_disallowed {
-        Ok(false)
-    } else {
-        Ok(true)
-    }
+    return Ok(true);
 }
 
-pub fn handle_empty_dir(empty: bool) {
-    if empty == true {
-        return;
+pub fn get_cur_exe_or_cur_dir() -> Result<PathBuf> {
+    match current_exe() {
+        Ok(cur_exe) => match cur_exe.parent() {
+            Some(p) => Ok(p.to_path_buf()),
+            None => {
+                println!("Error: could not find current_exe's parent");
+                println!("attempting fallback to current_dir");
+                match current_dir() {
+                    Ok(p) => return Ok(p),
+                    Err(e) => {
+                        bail!(e);
+                    }
+                }
+            }
+        },
+        Err(e) => {
+            println!("Error: {}", e);
+            println!("attempting fallback to current_dir");
+            match current_dir() {
+                Ok(p) => return Ok(p),
+                Err(e) => {
+                    bail!(e);
+                }
+            }
+        }
     }
-    println!(
-        "{} is intended to be ran in an empty directory because it \
-        makes a few files wherever the program is placed.",
-        PROGRAM_NAME
-    );
-    println!(
-        "Would you like to continue the program? y or n? \
-        This is so you have a chance to move it to an empty \
-        directory before any files are made."
-    );
-
-    let correct_inputs = Vec::from(["y", "n"]);
-    let input_given = loop_until_correct_input(correct_inputs);
-    if input_given == "y" {
-        return;
-    } else if input_given == "n" {
-        exit(0)
-    }
-    unreachable!()
 }
 
 #[cfg(target_os = "windows")]
@@ -222,7 +254,7 @@ pub fn locate_er() -> Result<PathBuf> {
     Ok(er_dir)
 }
 
-pub fn handle_er_ac(proc_name: &str) -> bool {
+pub fn handle_er_ac(data_path: &PathBuf, proc_name: &str) -> bool {
     if !proc_name.contains("start_protected")
         && !proc_name.contains("eldenring")
     {
@@ -316,7 +348,7 @@ pub fn handle_er_ac(proc_name: &str) -> bool {
         );
         println!("This warning will not show again.");
         println!();
-        if let Err(e) = write_file("er_warning_passed", 0) {
+        if let Err(e) = write_file(data_path, "er_warning_passed", 0) {
             println!("{}", e);
         }
         return true;

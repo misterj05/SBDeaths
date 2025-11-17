@@ -1,8 +1,10 @@
-use std::fs::File;
+use std::fs::{File, create_dir};
 use std::io::prelude::*;
+use std::path::{Path, PathBuf};
 use std::thread::sleep;
 use std::time::Duration;
 
+use directories::ProjectDirs;
 use libmem::*;
 
 mod offsets;
@@ -71,45 +73,135 @@ fn main() {
     let mut prev_deaths: u32 = 0;
     let mut er_warning_passed: bool = false;
 
-    match is_cur_dir_empty() {
-        Ok(empty) => {
-            handle_empty_dir(empty);
+    let portable: bool = match get_cur_exe_or_cur_dir() {
+        Ok(p) => match is_dir_empty(p) {
+            Ok(b) => b,
+            Err(e) => {
+                println!("Error: {}", e);
+                true
+            }
+        },
+        Err(e) => {
+            println!("Error: {}", e);
+            true
+        }
+    };
 
-            #[cfg(feature = "updater")]
-            #[cfg(not(debug_assertions))]
-            if let Err(e) = self_update() {
-                println!("Error: {}", e)
+    let data_path: PathBuf = if portable {
+        match get_cur_exe_or_cur_dir() {
+            Ok(p) => p,
+            Err(e) => {
+                exit_with_error(Some(format!("{} {}:{}", e, file!(), line!())));
+                unreachable!();
             }
         }
-        Err(e) => {
-            println!("Error: {}", e)
+    } else {
+        match ProjectDirs::from("", "", PROGRAM_NAME) {
+            Some(proj_dirs) => {
+                match Path::try_exists(proj_dirs.data_dir()) {
+                    Ok(b) => {
+                        if !b {
+                            if let Err(e) = create_dir(proj_dirs.data_dir()) {
+                                println!("{}", e);
+                            }
+                        }
+
+                        #[cfg(debug_assertions)]
+                        if let Ok(b) =
+                            Path::try_exists(Path::new("offsets.yaml"))
+                        {
+                            if b {
+                                if let Err(e) = copy_file_to_dir(
+                                    Path::new("offsets.yaml"),
+                                    proj_dirs.data_dir(),
+                                ) {
+                                    println!("Error: {}", e);
+                                };
+                            } else {
+                                println!(
+                                    "Debug: offsets.yaml does not exist for copy to data_dir"
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error: {}", e);
+                    }
+                }
+                proj_dirs.data_dir().to_path_buf()
+            }
+            None => {
+                exit_with_error(Some(format!(
+                    "could not find project dir {}:{}",
+                    file!(),
+                    line!()
+                )));
+                unreachable!();
+            }
         }
+    };
+
+    #[cfg(feature = "updater")]
+    #[cfg(not(debug_assertions))]
+    if let Err(e) = self_update(&data_path) {
+        println!("Error: {}", e)
     }
 
-    if File::open("er_warning_passed").is_ok() {
+    let printable_data_path =
+        match std::env::var("USER").or_else(|_| std::env::var("USERNAME")) {
+            Ok(user) => {
+                let path = if let Some((_, p)) =
+                    data_path.to_string_lossy().split_once(&user.to_string())
+                {
+                    p.to_string()
+                } else {
+                    String::default()
+                };
+                path.chars().skip(1).collect()
+            }
+            Err(e) => {
+                println!("printable_data_path ERROR: {}", e);
+                String::default()
+            }
+        };
+
+    if File::open(data_path.join("er_warning_passed")).is_ok() {
         er_warning_passed = true;
     }
 
-    if File::open("template.txt").is_err() {
-        if let Ok(mut f) = File::create("template.txt") {
+    if File::open(data_path.join("template.txt")).is_err() {
+        if let Ok(mut f) = File::create(data_path.join("template.txt")) {
             if let Err(e) = f.write_all("{}".as_bytes()) {
                 println!("Error: {}", e);
             }
         }
     }
 
-    if let Err(e) = write_file(format!("{}.txt", PROGRAM_NAME).as_str(), 0) {
+    if let Err(e) =
+        write_file(&data_path, format!("{}.txt", PROGRAM_NAME).as_str(), 0)
+    {
         println!("Error: {}", e);
     }
 
     println!();
     println!("The program is working in the background, keep the window open.");
     println!();
-    println!(
-        "Your death count will be written to a txt file called \
-        {}.txt in the same folder where you ran this program.",
-        PROGRAM_NAME
-    );
+    match portable {
+        true => {
+            println!(
+                "Your death count will be written to a txt file called \
+                {}.txt in the same folder where you ran this program.",
+                PROGRAM_NAME
+            );
+        }
+        false => {
+            println!(
+                "Your death count will be written to a txt file called \
+                {}.txt in {}",
+                PROGRAM_NAME, printable_data_path
+            );
+        }
+    }
     println!(
         "You can display the file in OBS by adding a Text Source \
         and selecting the \"From File\" option."
@@ -153,11 +245,11 @@ fn main() {
         println!("Debug: {}", proc_name);
 
         if er_warning_passed == false {
-            er_warning_passed = handle_er_ac(proc_name);
+            er_warning_passed = handle_er_ac(&data_path, proc_name);
         }
 
         good_or_continue!(
-            @result offset_map = offsets::deserialize_offsets()
+            @result offset_map = offsets::deserialize_offsets(&data_path)
         );
 
         let mut module_name = "nothing";
@@ -271,6 +363,7 @@ fn main() {
                     }
 
                     if let Err(e) = write_file(
+                        &data_path,
                         format!("{}.txt", PROGRAM_NAME).as_str(),
                         deaths,
                     ) {
