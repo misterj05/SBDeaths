@@ -11,9 +11,9 @@ mod offsets;
 mod util;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "updater")] {
-        mod updater;
-        use updater::*;
+    if #[cfg(any(feature = "update-notifier", feature = "update-offsets"))] {
+        mod update;
+        use update::*;
     }
 }
 
@@ -61,6 +61,7 @@ macro_rules! good_or_continue {
 }
 
 pub const PROGRAM_NAME: &str = "SBDeaths";
+pub const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
 pub const PROCESS_NAMES: [&str; 5] = [
     "DarkSouls",
     "DARKSOULS",
@@ -141,9 +142,9 @@ fn main() {
         }
     };
 
-    #[cfg(feature = "updater")]
+    #[cfg(feature = "update-offsets")]
     #[cfg(not(debug_assertions))]
-    if let Err(e) = self_update(&data_path) {
+    if let Err(e) = update_offsets(&data_path) {
         println!("Error: {}", e)
     }
 
@@ -183,6 +184,30 @@ fn main() {
         println!("Error: {}", e);
     }
 
+    println!();
+    match cfg!(feature = "update-notifier") {
+        true => match check_for_updates() {
+            Ok(Some(tag)) => {
+                println!(
+                    "SBDeaths v{}. Update available: {}",
+                    VERSION.unwrap_or("unknown version"),
+                    tag
+                );
+            }
+            Ok(None) => {
+                println!(
+                    "SBDeaths v{}. No updates available.",
+                    VERSION.unwrap_or("unknown version")
+                );
+            }
+            Err(e) => {
+                println!("Error: {}", e);
+            }
+        },
+        false => {
+            println!("SBDeaths v{}", VERSION.unwrap_or("unknown version"));
+        }
+    }
     println!();
     println!("The program is working in the background, keep the window open.");
     println!();

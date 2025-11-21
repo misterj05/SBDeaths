@@ -4,8 +4,9 @@ version = "1.0.3"
 edition = "2024"
 
 [features]
-default = ["updater"]
-updater = []
+default = ["update-notifier", "update-offsets"]
+update-notifier = []
+update-offsets = []
 
 [dependencies]
 anyhow = "1.0.99"
@@ -16,7 +17,7 @@ serde_yml = "0.0.12" # Used for deserialization of the offsets.
 sysinfo = "0.35.0" # Used for grabbing a correct PID to one of the Souls games.
 libmem = { git = "https://github.com/rdbo/libmem.git" } # Used for the pointer arithmetic.
 sha2 = "0.10.9" # Used for hashing the offsets.yaml to detect that it potentially needs an update.
-reqwest = { version = "0.12.23", features = ["blocking"] } # Used to grab the offsets.yaml from the source repo.
+reqwest = { version = "0.12.23", features = ["blocking", "json"] } # Used for update related features.
 directories = "6.0.0" # Used to integrate a platform agnostic data directory for non-portable use.
 
 [target.'cfg(windows)'.dependencies]
