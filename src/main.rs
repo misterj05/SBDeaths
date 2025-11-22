@@ -41,7 +41,7 @@ macro_rules! good_or_continue {
         let func_result = $expr;
         if func_result.is_none() {
             #[cfg(debug_assertions)]
-            println!("Debug: {}", $msg);
+            println!("{}:{} DEBUG: {}", file!(), line!(), $msg);
 
             sleep(Duration::from_secs(1));
             continue;
@@ -52,7 +52,7 @@ macro_rules! good_or_continue {
     (@result $ident:ident = $expr:expr) => {
         let func_result = $expr;
         if let Err(e) = func_result {
-            println!("Error: {}", e);
+            println!("{}:{} ERROR: {}", file!(), line!(), e);
             sleep(Duration::from_secs(1));
             continue;
         }
@@ -78,12 +78,12 @@ fn main() {
         Ok(p) => match is_dir_empty(p) {
             Ok(b) => b,
             Err(e) => {
-                println!("Error: {}", e);
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
                 true
             }
         },
         Err(e) => {
-            println!("Error: {}", e);
+            println!("{}:{} ERROR: {}", file!(), line!(), e);
             true
         }
     };
@@ -116,17 +116,24 @@ fn main() {
                                     Path::new("offsets.yaml"),
                                     proj_dirs.data_dir(),
                                 ) {
-                                    println!("Error: {}", e);
+                                    println!(
+                                        "{}:{} ERROR: {}",
+                                        file!(),
+                                        line!(),
+                                        e
+                                    );
                                 };
                             } else {
                                 println!(
-                                    "Debug: offsets.yaml does not exist for copy to data_dir"
+                                    "{}:{} DEBUG: offsets.yaml does not exist for copy to data_dir",
+                                    file!(),
+                                    line!()
                                 );
                             }
                         }
                     }
                     Err(e) => {
-                        println!("Error: {}", e);
+                        println!("{}:{} ERROR: {}", file!(), line!(), e);
                     }
                 }
                 proj_dirs.data_dir().to_path_buf()
@@ -145,7 +152,7 @@ fn main() {
     #[cfg(feature = "update-offsets")]
     #[cfg(not(debug_assertions))]
     if let Err(e) = update_offsets(&data_path) {
-        println!("Error: {}", e)
+        println!("{}:{} ERROR: {}", file!(), line!(), e);
     }
 
     let printable_data_path =
@@ -161,7 +168,7 @@ fn main() {
                 path.chars().skip(1).collect()
             }
             Err(e) => {
-                println!("printable_data_path ERROR: {}", e);
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
                 String::default()
             }
         };
@@ -173,7 +180,7 @@ fn main() {
     if File::open(data_path.join("template.txt")).is_err() {
         if let Ok(mut f) = File::create(data_path.join("template.txt")) {
             if let Err(e) = f.write_all("{}".as_bytes()) {
-                println!("Error: {}", e);
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
             }
         }
     }
@@ -181,7 +188,7 @@ fn main() {
     if let Err(e) =
         write_file(&data_path, format!("{}.txt", PROGRAM_NAME).as_str(), 0)
     {
-        println!("Error: {}", e);
+        println!("{}:{} ERROR: {}", file!(), line!(), e);
     }
 
     println!();
@@ -201,7 +208,7 @@ fn main() {
                 );
             }
             Err(e) => {
-                println!("Error: {}", e);
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
             }
         },
         false => {
@@ -244,7 +251,7 @@ fn main() {
         let pid = get_pid();
         if let (None, _) = pid {
             #[cfg(debug_assertions)]
-            println!("Debug: Couldn't find a Pid.");
+            println!("{}:{} DEBUG: Couldn't find a Pid.", file!(), line!());
 
             sleep(Duration::from_secs(1));
             continue;
@@ -267,7 +274,7 @@ fn main() {
         );
 
         #[cfg(debug_assertions)]
-        println!("Debug: {}", proc_name);
+        println!("{}:{} DEBUG: {}", file!(), line!(), proc_name);
 
         if er_warning_passed == false {
             er_warning_passed = handle_er_ac(&data_path, proc_name);
