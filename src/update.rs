@@ -2,7 +2,7 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, bail};
 use reqwest::blocking::get;
 use serde::Deserialize;
 
@@ -26,24 +26,24 @@ fn fetch_file(url: &String) -> Result<Vec<u8>> {
     match resp {
         Ok(r) => {
             if !r.status().is_success() {
-                return Err(anyhow!(
-                    "Failed to update offsets.\n\
+                bail!(
+                    "Failed to fetch file.\n\
                     HTTP Status Code was not a success code.\n\
                     Status Code: {}",
                     r.status()
-                ));
+                );
             }
             resp = Ok(r);
         }
         Err(e) => {
-            return Err(anyhow!(
+            bail!(
                 "Failed to update offsets.\n\
                 {}\n\
                 Are you connected to the internet?\n\
                 If so it's likely the source website for {} is down right now.",
                 e,
                 PROGRAM_NAME
-            ));
+            );
         }
     }
     let mut buf = Vec::new();

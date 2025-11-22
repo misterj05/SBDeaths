@@ -9,7 +9,7 @@ use std::process::exit;
 use std::thread::sleep;
 use std::time::Duration;
 
-use anyhow::{Result, anyhow, bail, ensure};
+use anyhow::{Result, bail, ensure};
 use sha2::{Digest, Sha256};
 
 use crate::{PROCESS_NAMES, PROGRAM_NAME};
@@ -59,13 +59,13 @@ pub fn write_file(path: &PathBuf, name: &str, val: u32) -> Result<()> {
                 if let Err(e) =
                     f.write_all(replaced_template.to_string().as_bytes())
                 {
-                    return Err(anyhow!(
+                    bail!(
                         "Failed to write file named: {}\n\
                          Error Value: {}\n\
                          File existed before write attempt.",
                         name,
                         e
-                    ));
+                    );
                 }
             }
             Ok(())
@@ -73,13 +73,13 @@ pub fn write_file(path: &PathBuf, name: &str, val: u32) -> Result<()> {
         Err(..) => {
             if let Ok(mut f) = File::create(path.join(name)) {
                 if let Err(e) = f.write_all(val.to_string().as_bytes()) {
-                    return Err(anyhow!(
+                    bail!(
                         "Failed to write file named: {}\n\
                         Error Value: {}\n\
                         File did not exist before write attempt.",
                         name,
                         e
-                    ));
+                    );
                 }
             }
             Ok(())
@@ -249,7 +249,7 @@ pub fn locate_er() -> Result<PathBuf> {
     let steam_dir = steamlocate::SteamDir::locate()?;
 
     let Some((elden_ring_app, er_lib)) = steam_dir.find_app(ER_APP_ID)? else {
-        return Err(anyhow!("Could not find Elden Ring directory."));
+        bail!("Could not find Elden Ring directory.");
     };
     let er_dir = er_lib.resolve_app_dir(&elden_ring_app);
     let expected_rel_path =
