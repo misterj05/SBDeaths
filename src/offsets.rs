@@ -26,12 +26,12 @@ pub fn deserialize_offsets(data_path: &PathBuf) -> Result<OffsetMap> {
 }
 
 pub fn get_offsets_from_name(
-    offset_map: OffsetMap,
+    offset_map: &OffsetMap,
     name: &str,
 ) -> Option<GameOffsets> {
     for e in offset_map {
         if e.0 == name {
-            return Some(e.1);
+            return Some(e.1.clone());
         }
     }
     None

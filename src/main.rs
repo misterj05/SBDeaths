@@ -333,7 +333,7 @@ fn main() {
 
         good_or_continue!(
             @option offsets = offsets::get_offsets_from_name(
-                offset_map.to_owned(),
+                &offset_map,
                 module_name
             ),
             "Could not find Offsets by game name."
