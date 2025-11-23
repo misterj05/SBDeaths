@@ -49,7 +49,8 @@ pub fn get_pid() -> (Option<sysinfo::Pid>, Option<OsString>) {
     (None, None)
 }
 
-pub fn write_file(path: &PathBuf, name: &str, val: u32) -> Result<()> {
+pub fn write_file<P: AsRef<Path>>(path: P, name: &str, val: u32) -> Result<()> {
+    let path = path.as_ref();
     ensure!(path.is_dir(), "path is not a dir");
     let mut f = File::create(path.join(name))?;
     let template_exists = path.join("template.txt").try_exists()?;
@@ -234,7 +235,7 @@ pub fn locate_er() -> Result<PathBuf> {
     Ok(er_dir)
 }
 
-pub fn handle_er_ac(data_path: &PathBuf, proc_name: &str) -> bool {
+pub fn handle_er_ac<P: AsRef<Path>>(data_path: P, proc_name: &str) -> bool {
     if !proc_name.contains("start_protected")
         && !proc_name.contains("eldenring")
     {

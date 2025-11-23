@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::PathBuf;
+use std::path::Path;
 
 use anyhow::Result;
 use serde::Deserialize;
@@ -16,7 +16,9 @@ pub struct GameOffsets {
 
 pub type OffsetMap = HashMap<String, GameOffsets>;
 
-pub fn deserialize_offsets(data_path: &PathBuf) -> Result<OffsetMap> {
+pub fn deserialize_offsets<P: AsRef<Path>>(data_path: P) -> Result<OffsetMap> {
+    let data_path = data_path.as_ref();
+
     let file = File::open(data_path.join("offsets.yaml"))?;
     let reader = BufReader::new(file);
 

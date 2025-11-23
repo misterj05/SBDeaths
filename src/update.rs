@@ -1,6 +1,6 @@
 use std::fs::{self, File};
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::{Result, bail};
 use reqwest::blocking::get;
@@ -51,7 +51,12 @@ fn fetch_file(url: &String) -> Result<Vec<u8>> {
     return Ok(buf);
 }
 
-fn replace_if_different(url: &String, local_path: &Path) -> Result<()> {
+fn replace_if_different<P: AsRef<Path>>(
+    url: &String,
+    local_path: P,
+) -> Result<()> {
+    let local_path = local_path.as_ref();
+
     let downloaded = fetch_file(url)?;
 
     let downloaded_hash = sha256_bytes(&downloaded);
@@ -102,7 +107,8 @@ fn replace_if_different(url: &String, local_path: &Path) -> Result<()> {
     return Ok(());
 }
 
-pub fn update_offsets(data_path: &PathBuf) -> Result<()> {
+pub fn update_offsets<P: AsRef<Path>>(data_path: P) -> Result<()> {
+    let data_path = data_path.as_ref();
     let offsets_path = data_path.join("offsets.yaml");
     let offsets_url =
         String::from(PROTOCOL.to_string() + FORGE + REPO + OFFSETS);
