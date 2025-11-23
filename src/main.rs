@@ -72,7 +72,6 @@ pub const PROCESS_NAMES: [&str; 5] = [
 
 fn main() {
     let mut prev_deaths: u32 = 0;
-    let mut er_warning_passed: bool = false;
 
     let portable: bool = match get_cur_exe_or_cur_dir() {
         Ok(p) => match is_dir_empty(p) {
@@ -100,18 +99,18 @@ fn main() {
         match ProjectDirs::from("", "", PROGRAM_NAME) {
             Some(proj_dirs) => {
                 match Path::try_exists(proj_dirs.data_dir()) {
-                    Ok(b) => {
-                        if !b {
+                    Ok(exists) => {
+                        if !exists {
                             if let Err(e) = create_dir(proj_dirs.data_dir()) {
                                 println!("{}", e);
                             }
                         }
 
                         #[cfg(debug_assertions)]
-                        if let Ok(b) =
+                        if let Ok(exists) =
                             Path::try_exists(Path::new("offsets.yaml"))
                         {
-                            if b {
+                            if exists {
                                 if let Err(e) = copy_file_to_dir(
                                     Path::new("offsets.yaml"),
                                     proj_dirs.data_dir(),
@@ -149,6 +148,21 @@ fn main() {
         }
     };
 
+    let mut er_warning_passed: bool =
+        match data_path.join("er_warning_passed").try_exists() {
+            Ok(exists) => {
+                if exists {
+                    true
+                } else {
+                    false
+                }
+            }
+            Err(e) => {
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                false
+            }
+        };
+
     #[cfg(feature = "update-offsets")]
     #[cfg(not(debug_assertions))]
     if let Err(e) = update_offsets(&data_path) {
@@ -173,15 +187,19 @@ fn main() {
             }
         };
 
-    if File::open(data_path.join("er_warning_passed")).is_ok() {
-        er_warning_passed = true;
-    }
-
-    if File::open(data_path.join("template.txt")).is_err() {
-        if let Ok(mut f) = File::create(data_path.join("template.txt")) {
-            if let Err(e) = f.write_all("{}".as_bytes()) {
-                println!("{}:{} ERROR: {}", file!(), line!(), e);
+    match data_path.join("template.txt").try_exists() {
+        Ok(exists) => {
+            if !exists {
+                if let Ok(mut f) = File::create(data_path.join("template.txt"))
+                {
+                    if let Err(e) = f.write_all("{}".as_bytes()) {
+                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                    }
+                }
             }
+        }
+        Err(e) => {
+            println!("{}:{} ERROR: {}", file!(), line!(), e);
         }
     }
 
