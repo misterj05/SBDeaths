@@ -50,41 +50,17 @@ pub fn get_pid() -> (Option<sysinfo::Pid>, Option<OsString>) {
 }
 
 pub fn write_file(path: &PathBuf, name: &str, val: u32) -> Result<()> {
-    match File::open(path.join(name)) {
-        Ok(..) => {
-            let raw_template = fs::read_to_string(path.join("template.txt"))?;
-            let replaced_template =
-                raw_template.replace("{}", &val.to_string());
-            if let Ok(mut f) = File::create(path.join(name)) {
-                if let Err(e) =
-                    f.write_all(replaced_template.to_string().as_bytes())
-                {
-                    bail!(
-                        "Failed to write file named: {}\n\
-                         Error Value: {}\n\
-                         File existed before write attempt.",
-                        name,
-                        e
-                    );
-                }
-            }
-            Ok(())
-        }
-        Err(..) => {
-            if let Ok(mut f) = File::create(path.join(name)) {
-                if let Err(e) = f.write_all(val.to_string().as_bytes()) {
-                    bail!(
-                        "Failed to write file named: {}\n\
-                        Error Value: {}\n\
-                        File did not exist before write attempt.",
-                        name,
-                        e
-                    );
-                }
-            }
-            Ok(())
-        }
-    }
+    ensure!(path.is_dir(), "path is not a dir");
+    let mut f = File::create(path.join(name))?;
+    let template_exists = path.join("template.txt").try_exists()?;
+    let value_to_write = if template_exists {
+        fs::read_to_string(path.join("template.txt"))?
+            .replace("{}", &val.to_string())
+    } else {
+        val.to_string()
+    };
+    f.write_all(value_to_write.to_string().as_bytes())?;
+    return Ok(());
 }
 
 pub fn copy_file_to_dir<P: AsRef<Path>>(
