@@ -103,7 +103,12 @@ fn main() {
                         if !exists {
                             if let Err(e) = create_dir_all(proj_dirs.data_dir())
                             {
-                                println!("{}", e);
+                                println!(
+                                    "{}:{} ERROR: {}",
+                                    file!(),
+                                    line!(),
+                                    e
+                                );
                             }
                         }
 
@@ -410,7 +415,7 @@ fn main() {
                         deaths
                     );
                     if let Err(e) = std::io::stdout().flush() {
-                        println!("{}", e);
+                        println!("{}:{} ERROR: {}", file!(), line!(), e);
                     }
 
                     if let Err(e) = write_file(
@@ -418,7 +423,7 @@ fn main() {
                         format!("{}.txt", PROGRAM_NAME).as_str(),
                         deaths,
                     ) {
-                        println!("{}", e);
+                        println!("{}:{} ERROR: {}", file!(), line!(), e);
                     }
                 }
                 prev_deaths = deaths;
@@ -430,7 +435,7 @@ fn main() {
                 }
                 print!("\r{}\r", clear_line_string);
                 if let Err(e) = std::io::stdout().flush() {
-                    println!("{}", e);
+                    println!("{}:{} ERROR: {}", file!(), line!(), e);
                 }
                 break;
             }
