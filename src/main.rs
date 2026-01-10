@@ -1,4 +1,4 @@
-use std::fs::{File, create_dir};
+use std::fs::{File, create_dir_all};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::thread::sleep;
@@ -101,7 +101,8 @@ fn main() {
                 match Path::try_exists(proj_dirs.data_dir()) {
                     Ok(exists) => {
                         if !exists {
-                            if let Err(e) = create_dir(proj_dirs.data_dir()) {
+                            if let Err(e) = create_dir_all(proj_dirs.data_dir())
+                            {
                                 println!("{}", e);
                             }
                         }
