@@ -41,5 +41,4 @@ Please report any issues you find [here](https://codeberg.org/misterj05/SBDeaths
 [DSDeaths](https://github.com/Quidrex/DSDeaths) for inspiration and the initial offsets.
 
 ## Licensing
-- SBDeaths is under the [GPLv3](https://codeberg.org/misterj05/SBDeaths/src/branch/main/LICENSE).
-- The offsets.yaml file is under no license and is provided AS IS.
+SBDeaths is licensed under the [GPL-3.0-or-later](https://www.gnu.org/licenses/gpl-3.0.txt).

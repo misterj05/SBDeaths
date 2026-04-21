@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2025-2026 misterj05 & SBDeaths Contributors
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 use std::collections::HashSet;
 use std::env::{current_dir, current_exe};
 use std::ffi::OsString;

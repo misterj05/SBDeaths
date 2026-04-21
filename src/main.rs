@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2025-2026 misterj05 & SBDeaths Contributors
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 use std::fs::{File, create_dir_all};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
