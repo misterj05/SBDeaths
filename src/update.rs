@@ -6,8 +6,9 @@ use anyhow::{Result, bail};
 use reqwest::blocking::get;
 use serde::Deserialize;
 
+use crate::offsets::OffsetsFile;
 use crate::util::{loop_until_correct_input, sha256_bytes, sha256_file};
-use crate::{PROGRAM_NAME, VERSION};
+use crate::{OFFSETS_COMPAT, PROGRAM_NAME, VERSION};
 
 const PROTOCOL: &str = "https://";
 const FORGE: &str = "codeberg.org/";
@@ -105,6 +106,30 @@ fn replace_if_different<P: AsRef<Path>>(
     }
 
     return Ok(());
+}
+
+pub fn verify_offsets_version() -> Result<Option<String>> {
+    let offsets_url =
+        String::from(PROTOCOL.to_string() + FORGE + REPO + OFFSETS);
+    let downloaded_offsets = fetch_file(&offsets_url)?;
+    let offsets_msg = String::from(
+        "The next offsets.yaml update is incompatible with this version of \
+        SBDeaths, if there is an update available for SBDeaths, please update \
+        to it. ",
+    );
+    match serde_yml::from_slice::<OffsetsFile>(&downloaded_offsets) {
+        Ok(offsets) => {
+            if let Some(compat) = offsets.compat {
+                if compat != OFFSETS_COMPAT {
+                    return Ok(Some(offsets_msg));
+                }
+            }
+        }
+        Err(e) => {
+            return Ok(Some(offsets_msg + &e.to_string()));
+        }
+    }
+    return Ok(None);
 }
 
 pub fn update_offsets<P: AsRef<Path>>(data_path: P) -> Result<()> {

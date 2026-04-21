@@ -62,6 +62,7 @@ macro_rules! good_or_continue {
 
 pub const PROGRAM_NAME: &str = "SBDeaths";
 pub const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
+pub const OFFSETS_COMPAT: u16 = 2;
 pub const PROCESS_NAMES: [&str; 5] = [
     "DarkSouls",
     "DARKSOULS",
@@ -171,8 +172,21 @@ fn main() {
 
     #[cfg(feature = "update-offsets")]
     #[cfg(not(debug_assertions))]
-    if let Err(e) = update_offsets(&data_path) {
-        println!("{}:{} ERROR: {}", file!(), line!(), e);
+    match verify_offsets_version() {
+        Ok(Some(msg)) => {
+            println!("{}:{} MSG: {}", file!(), line!(), msg);
+            if let Err(e) = update_offsets(&data_path) {
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+            }
+        }
+        Ok(None) => {
+            if let Err(e) = update_offsets(&data_path) {
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+            }
+        }
+        Err(e) => {
+            println!("{}:{} ERROR: {}", file!(), line!(), e);
+        }
     }
 
     let printable_data_path =
@@ -268,6 +282,50 @@ fn main() {
     );
     println!();
 
+    // Verify OffsetsFile compat version
+    match offsets::get_offsets_compat(&data_path) {
+        Ok(Some(compat)) => {
+            if compat != OFFSETS_COMPAT {
+                exit_with_error(Some(format!(
+                    "The local offsets file is not compatible with the currently \
+                    running binary.\nExpected version: {}, Found version: {}.\n",
+                    OFFSETS_COMPAT, &compat
+                )));
+            }
+        }
+        Ok(None) => {
+            exit_with_error(Some(String::from(
+                "Couldn't get offsets compat info.",
+            )));
+            unreachable!()
+        }
+        Err(e) => {
+            println!("{}:{} ERROR: {}", file!(), line!(), &e.to_string());
+            exit_with_error(Some(String::from(
+                "Couldn't get offsets compat info.",
+            )));
+            unreachable!()
+        }
+    };
+
+    // Grab Offsets from the OffsetsFile
+    let offsets = match offsets::get_offsets(&data_path) {
+        Ok(Some(o)) => o,
+        Ok(None) => {
+            exit_with_error(Some(String::from(
+                "Couldn't get offsets from file.",
+            )));
+            unreachable!()
+        }
+        Err(e) => {
+            println!("{}:{} ERROR: {}", file!(), line!(), &e.to_string());
+            exit_with_error(Some(String::from(
+                "Couldn't get offsets from file.",
+            )));
+            unreachable!()
+        }
+    };
+
     loop {
         // #[cfg (debug_assertions)]
         // print_all_processes();
@@ -304,12 +362,10 @@ fn main() {
             er_warning_passed = handle_er_ac(&data_path, proc_name);
         }
 
-        good_or_continue!(
-            @result offset_map = offsets::deserialize_offsets(&data_path)
-        );
+        let offset_map = &offsets;
 
         let mut module_name = "nothing";
-        for e in &offset_map {
+        for e in offset_map {
             // On Linux DSR gets trimmed to "DarkSoulsRemast"
             // and DS3 gets trimmed to "DarkSoulsIII.ex"
             // which causes get_offsets_from_name to fail at
