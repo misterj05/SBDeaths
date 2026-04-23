@@ -1,0 +1,471 @@
+// SPDX-FileCopyrightText: Copyright 2025-2026 misterj05 & SBDeaths Contributors
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+use std::fs::{File, create_dir_all};
+use std::io::prelude::*;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, RwLock};
+use std::thread::sleep;
+use std::time::Duration;
+
+use directories::ProjectDirs;
+use libmem::*;
+
+use crate::update::{
+    check_for_updates, update_offsets, verify_offsets_version,
+};
+use crate::{OFFSETS_COMPAT, PROGRAM_NAME, VERSION, dbg, good_or_continue};
+use crate::{offsets, util::*};
+
+pub fn run(deaths: Arc<RwLock<u32>>, dtx: std::sync::mpsc::Sender<u32>) {
+    let mut prev_deaths: u32 = 0;
+
+    let portable: bool = match get_cur_exe_or_cur_dir() {
+        Ok(p) => match is_dir_empty(p) {
+            Ok(b) => b,
+            Err(e) => {
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                true
+            }
+        },
+        Err(e) => {
+            println!("{}:{} ERROR: {}", file!(), line!(), e);
+            true
+        }
+    };
+
+    let data_path: PathBuf = if portable {
+        match get_cur_exe_or_cur_dir() {
+            Ok(p) => p,
+            Err(e) => {
+                exit_with_error(Some(format!("{} {}:{}", e, file!(), line!())));
+                unreachable!();
+            }
+        }
+    } else {
+        match ProjectDirs::from("", "", PROGRAM_NAME) {
+            Some(proj_dirs) => {
+                match Path::try_exists(proj_dirs.data_dir()) {
+                    Ok(exists) => {
+                        if !exists {
+                            if let Err(e) = create_dir_all(proj_dirs.data_dir())
+                            {
+                                println!(
+                                    "{}:{} ERROR: {}",
+                                    file!(),
+                                    line!(),
+                                    e
+                                );
+                            }
+                        }
+
+                        #[cfg(debug_assertions)]
+                        if let Ok(exists) =
+                            Path::try_exists(Path::new("offsets.yaml"))
+                        {
+                            if exists {
+                                if let Err(e) = copy_file_to_dir(
+                                    Path::new("offsets.yaml"),
+                                    proj_dirs.data_dir(),
+                                ) {
+                                    println!(
+                                        "{}:{} ERROR: {}",
+                                        file!(),
+                                        line!(),
+                                        e
+                                    );
+                                };
+                            } else {
+                                println!(
+                                    "{}:{} DEBUG: offsets.yaml does not exist for copy to data_dir",
+                                    file!(),
+                                    line!()
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                    }
+                }
+                proj_dirs.data_dir().to_path_buf()
+            }
+            None => {
+                exit_with_error(Some(format!(
+                    "could not find project dir {}:{}",
+                    file!(),
+                    line!()
+                )));
+                unreachable!();
+            }
+        }
+    };
+
+    let mut er_warning_passed: bool =
+        match data_path.join("er_warning_passed").try_exists() {
+            Ok(exists) => {
+                if exists {
+                    true
+                } else {
+                    false
+                }
+            }
+            Err(e) => {
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                false
+            }
+        };
+
+    #[cfg(feature = "update-offsets")]
+    #[cfg(not(debug_assertions))]
+    match verify_offsets_version() {
+        Ok(Some(msg)) => {
+            println!("{}:{} MSG: {}", file!(), line!(), msg);
+            if let Err(e) = update_offsets(&data_path) {
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+            }
+        }
+        Ok(None) => {
+            if let Err(e) = update_offsets(&data_path) {
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+            }
+        }
+        Err(e) => {
+            println!("{}:{} ERROR: {}", file!(), line!(), e);
+        }
+    }
+
+    let printable_data_path =
+        match std::env::var("USER").or_else(|_| std::env::var("USERNAME")) {
+            Ok(user) => {
+                let path = if let Some((_, p)) =
+                    data_path.to_string_lossy().split_once(&user.to_string())
+                {
+                    p.to_string()
+                } else {
+                    String::default()
+                };
+                path.chars().skip(1).collect()
+            }
+            Err(e) => {
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                String::default()
+            }
+        };
+
+    match data_path.join("template.txt").try_exists() {
+        Ok(exists) => {
+            if !exists {
+                if let Ok(mut f) = File::create(data_path.join("template.txt"))
+                {
+                    if let Err(e) = f.write_all("{}".as_bytes()) {
+                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            println!("{}:{} ERROR: {}", file!(), line!(), e);
+        }
+    }
+
+    if let Err(e) =
+        write_file(&data_path, format!("{}.txt", PROGRAM_NAME).as_str(), 0)
+    {
+        println!("{}:{} ERROR: {}", file!(), line!(), e);
+    }
+
+    println!();
+    match cfg!(feature = "update-notifier") {
+        true => match check_for_updates() {
+            Ok(Some(tag)) => {
+                println!(
+                    "SBDeaths v{}. Update available: {}",
+                    VERSION.unwrap_or("unknown version"),
+                    tag
+                );
+            }
+            Ok(None) => {
+                println!(
+                    "SBDeaths v{}. No updates available.",
+                    VERSION.unwrap_or("unknown version")
+                );
+            }
+            Err(e) => {
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+            }
+        },
+        false => {
+            println!("SBDeaths v{}", VERSION.unwrap_or("unknown version"));
+        }
+    }
+    println!();
+    println!("The program is working in the background, keep the window open.");
+    println!();
+    match portable {
+        true => {
+            println!(
+                "Your death count will be written to a txt file called \
+                {}.txt in the same folder where you ran this program.",
+                PROGRAM_NAME
+            );
+        }
+        false => {
+            println!(
+                "Your death count will be written to a txt file called \
+                {}.txt in {}",
+                PROGRAM_NAME, printable_data_path
+            );
+        }
+    }
+    println!(
+        "You can display the file in OBS by adding a Text Source \
+        and selecting the \"From File\" option."
+    );
+    println!(
+        "The template.txt will be used as the template for the final .txt file, \
+        all instances of \"{{}}\" will be replaced with the death count."
+    );
+    println!();
+
+    // Verify OffsetsFile compat version
+    match offsets::get_offsets_compat(&data_path) {
+        Ok(Some(compat)) => {
+            if compat != OFFSETS_COMPAT {
+                exit_with_error(Some(format!(
+                    "The local offsets file is not compatible with the currently \
+                    running binary.\nExpected version: {}, Found version: {}.\n",
+                    OFFSETS_COMPAT, &compat
+                )));
+            }
+        }
+        Ok(None) => {
+            exit_with_error(Some(String::from(
+                "Couldn't get offsets compat info.",
+            )));
+            unreachable!()
+        }
+        Err(e) => {
+            println!("{}:{} ERROR: {}", file!(), line!(), &e.to_string());
+            exit_with_error(Some(String::from(
+                "Couldn't get offsets compat info.",
+            )));
+            unreachable!()
+        }
+    };
+
+    // Grab Offsets from the OffsetsFile
+    let offsets = match offsets::get_offsets(&data_path) {
+        Ok(Some(o)) => o,
+        Ok(None) => {
+            exit_with_error(Some(String::from(
+                "Couldn't get offsets from file.",
+            )));
+            unreachable!()
+        }
+        Err(e) => {
+            println!("{}:{} ERROR: {}", file!(), line!(), &e.to_string());
+            exit_with_error(Some(String::from(
+                "Couldn't get offsets from file.",
+            )));
+            unreachable!()
+        }
+    };
+
+    // Send ready signal to other threads.
+    let w_lock = deaths.try_write();
+    if let Err(ref e) = w_lock {
+        println!("ERROR trying to aquire write lock for death value: {e}");
+    }
+    drop(w_lock);
+
+    loop {
+        // #[cfg (debug_assertions)]
+        // print_all_processes();
+
+        let pid = get_pid();
+        if let (None, _) = pid {
+            #[cfg(debug_assertions)]
+            println!("{}:{} DEBUG: Couldn't find a Pid.", file!(), line!());
+
+            sleep(Duration::from_secs(1));
+            continue;
+        }
+
+        good_or_continue!(
+            @option proc_name = pid.1,
+            "proc_name is a None."
+        );
+        good_or_continue!(
+            @option proc_name = proc_name.to_str(),
+            "Was unable to convert proc_name to a str."
+        );
+
+        let pid = pid.0.unwrap();
+
+        good_or_continue!(
+            @option game_process = get_process_ex(pid.as_u32()),
+            "Couldn't get Process from Pid"
+        );
+
+        #[cfg(debug_assertions)]
+        println!("{}:{} DEBUG: {}", file!(), line!(), proc_name);
+
+        if er_warning_passed == false {
+            er_warning_passed = handle_er_ac(&data_path, proc_name);
+        }
+
+        let offset_map = &offsets;
+
+        let mut module_name = "nothing";
+        for e in offset_map {
+            // On Linux DSR gets trimmed to "DarkSoulsRemast"
+            // and DS3 gets trimmed to "DarkSoulsIII.ex"
+            // which causes get_offsets_from_name to fail at
+            // finding a correct entry in the OffsetMap.
+            #[cfg(target_os = "linux")]
+            {
+                if proc_name.contains("DarkSoulsRemast") {
+                    module_name = "DarkSoulsRemastered.exe"
+                } else if proc_name.contains("DarkSoulsII") {
+                    if proc_name == "DarkSoulsII.exe" {
+                        module_name = "DarkSoulsII.exe"
+                    } else {
+                        module_name = "DarkSoulsIII.exe"
+                    }
+                } else if proc_name == e.0 {
+                    module_name = e.0
+                }
+            }
+
+            #[cfg(target_os = "windows")]
+            {
+                if proc_name == e.0 {
+                    module_name = e.0
+                }
+            }
+        }
+
+        good_or_continue!(
+            @option offsets = offsets::get_offsets_from_name(
+                &offset_map,
+                module_name
+            ),
+            "Could not find Offsets by game name."
+        );
+
+        let target_module: String = module_name.to_string();
+        let mut target_base_offset: usize = 0x0;
+        let mut target_offsets: Vec<usize> = Vec::from([0x0]);
+
+        match game_process.arch {
+            Arch::X86 => {
+                if let Some(o) = offsets.x86_base_offset {
+                    target_base_offset = o;
+                }
+                if let Some(o) = offsets.x86_offsets {
+                    target_offsets = o;
+                }
+            }
+            Arch::X64 => {
+                if let Some(o) = offsets.base_offset {
+                    target_base_offset = o;
+                }
+                if let Some(o) = offsets.offsets {
+                    target_offsets = o;
+                }
+            }
+            _ => {
+                println!("Game Arch not supported.");
+            }
+        }
+
+        #[cfg(debug_assertions)]
+        dbg!(&target_module);
+
+        good_or_continue!(
+            @option main_module = find_module_ex(
+                &game_process,
+                &target_module
+            ),
+            "Could not find Main Module for Game Process."
+        );
+
+        cfg_if::cfg_if! {
+            if #[cfg(debug_assertions)] {
+                dbg!(&main_module.name);
+                dbg!(main_module.base);
+            }
+        }
+
+        let final_base_offset = main_module.base + target_base_offset;
+
+        good_or_continue!(
+            @option pointer = deep_pointer_ex(
+                &game_process,
+                final_base_offset,
+                &target_offsets
+            ),
+            "No Pointer Found."
+        );
+
+        #[cfg(debug_assertions)]
+        dbg!(pointer);
+
+        loop {
+            let val = read_memory_ex::<u32>(&game_process, pointer);
+
+            if let Some(death_value) = val {
+                dbg!(death_value);
+                if prev_deaths != death_value && death_value != 0 {
+                    let mut w_lock = deaths.try_write();
+                    match w_lock {
+                        Ok(ref mut d) => {
+                            **d = death_value;
+                        }
+                        Err(ref e) => {
+                            println!(
+                                "ERROR trying to aquire write lock for death value: {e}"
+                            );
+                        }
+                    }
+                    drop(w_lock);
+
+                    if let Err(e) = dtx.send(death_value) {
+                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                    };
+
+                    print!(
+                        "\r {}: {} ",
+                        main_module.name.trim_end_matches(".exe"),
+                        death_value
+                    );
+                    if let Err(e) = std::io::stdout().flush() {
+                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                    }
+
+                    if let Err(e) = write_file(
+                        &data_path,
+                        format!("{}.txt", PROGRAM_NAME).as_str(),
+                        death_value,
+                    ) {
+                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                    }
+                }
+                prev_deaths = death_value;
+                sleep(Duration::from_secs(1));
+            } else {
+                let mut clear_line_string: String = String::from("");
+                for _ in 0..=60 {
+                    clear_line_string.push(' ');
+                }
+                print!("\r{}\r", clear_line_string);
+                if let Err(e) = std::io::stdout().flush() {
+                    println!("{}:{} ERROR: {}", file!(), line!(), e);
+                }
+                break;
+            }
+        }
+        sleep(Duration::from_secs(1));
+    }
+}
