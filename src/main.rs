@@ -8,6 +8,7 @@ use std::{
 
 mod cli;
 mod offsets;
+mod startup;
 mod util;
 
 cfg_if::cfg_if! {
@@ -76,16 +77,13 @@ fn main() {
     let (dtx, drx) = channel();
 
     {
+        let init_data = startup::init();
         let deaths2 = Arc::clone(&deaths);
         let dtx2 = dtx.clone();
         std::thread::spawn(move || {
-            cli::run(deaths2, dtx2);
+            cli::run(init_data, deaths2, dtx2);
         });
     }
-
-    // We are deliberately blocking here until the first recv which is when
-    // the cli::run thread tells us it's ready.
-    let _ = drx.recv();
 
     loop {
         std::thread::sleep(Duration::from_secs(1));
