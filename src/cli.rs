@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use libmem::*;
 
+use crate::offsets::find_base_offset;
 use crate::startup::InitData;
 use crate::{PROGRAM_NAME, dbg, good_or_continue, startup};
 use crate::{offsets, util::*};
@@ -104,28 +105,6 @@ pub fn run(
         let mut target_base_offset: usize = 0x0;
         let mut target_offsets: Vec<usize> = Vec::from([0x0]);
 
-        match game_process.arch {
-            Arch::X86 => {
-                if let Some(o) = offsets.x86_base_offset {
-                    target_base_offset = o;
-                }
-                if let Some(o) = offsets.x86_offsets {
-                    target_offsets = o;
-                }
-            }
-            Arch::X64 => {
-                if let Some(o) = offsets.base_offset {
-                    target_base_offset = o;
-                }
-                if let Some(o) = offsets.offsets {
-                    target_offsets = o;
-                }
-            }
-            _ => {
-                println!("Game Arch not supported.");
-            }
-        }
-
         #[cfg(debug_assertions)]
         dbg!(&target_module);
 
@@ -143,6 +122,50 @@ pub fn run(
                 dbg!(main_module.base);
             }
         }
+
+        // Work around libmem's Wine/Proton module size detection
+        #[cfg(target_os = "linux")]
+        let scan_size = match module_name.trim_end_matches(".exe") {
+            "DARKSOULS" => 31850496,
+            "DarkSoulsRemastered" => 31850496,
+            "DarkSoulsII" => 135168,
+            "DarkSoulsIII" => 74780672,
+            "sekiro" => 69107712,
+            "eldenring" => 78966784,
+            _ => 0,
+        };
+
+        #[cfg(target_os = "windows")]
+        let scan_size = main_module.size;
+
+        #[cfg(debug_assertions)]
+        dbg!(&scan_size);
+
+        target_base_offset = match find_base_offset(
+            &offsets,
+            &game_process,
+            &main_module,
+            scan_size,
+        ) {
+            Ok(base_offset) => base_offset,
+            Err(e) => {
+                #[cfg(debug_assertions)]
+                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                target_base_offset
+            }
+        };
+
+        target_offsets = match game_process.arch {
+            Arch::X86 => match offsets.x86_offsets {
+                Some(o) => o,
+                None => target_offsets,
+            },
+            Arch::X64 => match offsets.offsets {
+                Some(o) => o,
+                None => target_offsets,
+            },
+            _ => target_offsets,
+        };
 
         let final_base_offset = main_module.base + target_base_offset;
 

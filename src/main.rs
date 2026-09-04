@@ -62,7 +62,7 @@ macro_rules! good_or_continue {
 
 pub const PROGRAM_NAME: &str = "SBDeaths";
 pub const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
-pub const OFFSETS_COMPAT: u16 = 2;
+pub const OFFSETS_COMPAT: u16 = 3;
 pub const PROCESS_NAMES: [&str; 5] = [
     "DarkSouls",
     "DARKSOULS",
