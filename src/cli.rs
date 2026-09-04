@@ -167,6 +167,12 @@ pub fn run(
             _ => target_offsets,
         };
 
+        #[cfg(debug_assertions)]
+        println!(
+            "DEBUG: &target_base_offset = int: {}, hex: 0x{:0X}",
+            &target_base_offset, &target_base_offset
+        );
+
         let final_base_offset = main_module.base + target_base_offset;
 
         good_or_continue!(
@@ -179,7 +185,10 @@ pub fn run(
         );
 
         #[cfg(debug_assertions)]
-        dbg!(pointer);
+        println!(
+            "DEBUG: &pointer = int: {}, hex: 0x{:0X}",
+            &pointer, &pointer
+        );
 
         loop {
             let val = read_memory_ex::<u32>(&game_process, pointer);
