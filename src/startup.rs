@@ -125,16 +125,13 @@ pub fn init() -> InitData {
     #[cfg(feature = "update-offsets")]
     #[cfg(not(debug_assertions))]
     match verify_offsets_version() {
-        Ok(Some(msg)) => {
-            println!("{}:{} MSG: {}", file!(), line!(), msg);
-            if let Err(e) = update_offsets(&data_path) {
-                println!("{}:{} ERROR: {}", file!(), line!(), e);
-            }
-        }
         Ok(None) => {
             if let Err(e) = update_offsets(&data_path) {
                 println!("{}:{} ERROR: {}", file!(), line!(), e);
             }
+        }
+        Ok(Some(msg)) => {
+            println!("{}", msg);
         }
         Err(e) => {
             println!("{}:{} ERROR: {}", file!(), line!(), e);

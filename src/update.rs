@@ -125,14 +125,20 @@ pub fn verify_offsets_version() -> Result<Option<String>> {
             if let Some(compat) = offsets.compat {
                 if compat != OFFSETS_COMPAT {
                     return Ok(Some(offsets_msg));
+                } else {
+                    return Ok(None);
                 }
+            } else {
+                bail!(
+                    "The next offsets.yaml update doesn't contain a compat \
+                     version.",
+                );
             }
         }
         Err(e) => {
-            return Ok(Some(offsets_msg + &e.to_string()));
+            bail!(offsets_msg + &e.to_string());
         }
     }
-    return Ok(None);
 }
 
 pub fn update_offsets<P: AsRef<Path>>(data_path: P) -> Result<()> {
