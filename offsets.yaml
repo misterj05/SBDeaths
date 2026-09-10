@@ -77,8 +77,8 @@ offsets:
     base_offset: 0x3D5AAC0
     offsets: [0x90]
 
-  # AppVer: 1.17
-  # sha256: d1a84083c6c7c7902162ff098f7d86812839aa6b3575959398857e539c488134
+  # AppVer: 1.17.1
+  # sha256: 1a3547101327f65d0c76da2f9190ac0aa66871ea42bae2aecc61e11a8b597891
   eldenring.exe:
     x86_sig: null
     x86_sig_offset: null
