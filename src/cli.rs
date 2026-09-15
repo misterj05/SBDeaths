@@ -150,7 +150,7 @@ pub fn run(
             Ok(base_offset) => base_offset,
             Err(e) => {
                 #[cfg(debug_assertions)]
-                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                 target_base_offset
             }
         };
@@ -210,7 +210,7 @@ pub fn run(
                     drop(w_lock);
 
                     if let Err(e) = dtx.send(death_value) {
-                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                        eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                     };
 
                     print!(
@@ -219,7 +219,7 @@ pub fn run(
                         death_value
                     );
                     if let Err(e) = std::io::stdout().flush() {
-                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                        eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                     }
 
                     if let Err(e) = write_file(
@@ -227,7 +227,7 @@ pub fn run(
                         format!("{}.txt", PROGRAM_NAME).as_str(),
                         death_value,
                     ) {
-                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                        eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                     }
                 }
                 prev_deaths = death_value;
@@ -239,7 +239,7 @@ pub fn run(
                 }
                 print!("\r{}\r", clear_line_string);
                 if let Err(e) = std::io::stdout().flush() {
-                    println!("{}:{} ERROR: {}", file!(), line!(), e);
+                    eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                 }
                 break;
             }

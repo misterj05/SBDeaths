@@ -52,7 +52,7 @@ macro_rules! good_or_continue {
     (@result $ident:ident = $expr:expr) => {
         let func_result = $expr;
         if let Err(e) = func_result {
-            println!("{}:{} ERROR: {}", file!(), line!(), e);
+            eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
             sleep(Duration::from_secs(1));
             continue;
         }
@@ -94,7 +94,7 @@ fn main() {
                 println!("DEBUG: Shared Death Val is {}", *d);
             }
             Err(ref e) => {
-                println!("ERROR aquiring deaths read lock: {e}");
+                eprintln!("ERROR aquiring deaths read lock: {e}");
             }
         }
         drop(r_lock);

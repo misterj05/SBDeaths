@@ -196,7 +196,7 @@ pub fn get_cur_exe_or_cur_dir() -> Result<PathBuf> {
         Ok(cur_exe) => match cur_exe.parent() {
             Some(p) => Ok(p.to_path_buf()),
             None => {
-                println!(
+                eprintln!(
                     "{}:{} ERROR: could not find current_exe's parent",
                     file!(),
                     line!()
@@ -211,7 +211,7 @@ pub fn get_cur_exe_or_cur_dir() -> Result<PathBuf> {
             }
         },
         Err(e) => {
-            println!("{}:{} ERROR: {}", file!(), line!(), e);
+            eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
             println!("attempting fallback to current_dir");
             match current_dir() {
                 Ok(p) => return Ok(p),
@@ -333,7 +333,7 @@ pub fn handle_er_ac<P: AsRef<Path>>(data_path: P, proc_name: &str) -> bool {
         println!("This warning will not show again.");
         println!();
         if let Err(e) = write_file(data_path, "er_warning_passed", 0) {
-            println!("{}:{} ERROR: {}", file!(), line!(), e);
+            eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
         }
         return true;
     }

@@ -30,12 +30,12 @@ pub fn init() -> InitData {
         Ok(p) => match is_dir_empty(p) {
             Ok(b) => b,
             Err(e) => {
-                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                 true
             }
         },
         Err(e) => {
-            println!("{}:{} ERROR: {}", file!(), line!(), e);
+            eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
             true
         }
     };
@@ -56,7 +56,7 @@ pub fn init() -> InitData {
                         if !exists {
                             if let Err(e) = create_dir_all(proj_dirs.data_dir())
                             {
-                                println!(
+                                eprintln!(
                                     "{}:{} ERROR: {}",
                                     file!(),
                                     line!(),
@@ -74,7 +74,7 @@ pub fn init() -> InitData {
                                     Path::new("offsets.yaml"),
                                     proj_dirs.data_dir(),
                                 ) {
-                                    println!(
+                                    eprintln!(
                                         "{}:{} ERROR: {}",
                                         file!(),
                                         line!(),
@@ -91,7 +91,7 @@ pub fn init() -> InitData {
                         }
                     }
                     Err(e) => {
-                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                        eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                     }
                 }
                 proj_dirs.data_dir().to_path_buf()
@@ -117,7 +117,7 @@ pub fn init() -> InitData {
                 }
             }
             Err(e) => {
-                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                 false
             }
         };
@@ -127,14 +127,14 @@ pub fn init() -> InitData {
     match verify_offsets_version() {
         Ok(None) => {
             if let Err(e) = update_offsets(&data_path) {
-                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
             }
         }
         Ok(Some(msg)) => {
             println!("{}", msg);
         }
         Err(e) => {
-            println!("{}:{} ERROR: {}", file!(), line!(), e);
+            eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
         }
     }
 
@@ -151,7 +151,7 @@ pub fn init() -> InitData {
                 path.chars().skip(1).collect()
             }
             Err(e) => {
-                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                 String::default()
             }
         };
@@ -162,20 +162,20 @@ pub fn init() -> InitData {
                 if let Ok(mut f) = File::create(data_path.join("template.txt"))
                 {
                     if let Err(e) = f.write_all("{}".as_bytes()) {
-                        println!("{}:{} ERROR: {}", file!(), line!(), e);
+                        eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
                     }
                 }
             }
         }
         Err(e) => {
-            println!("{}:{} ERROR: {}", file!(), line!(), e);
+            eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
         }
     }
 
     if let Err(e) =
         write_file(&data_path, format!("{}.txt", PROGRAM_NAME).as_str(), 0)
     {
-        println!("{}:{} ERROR: {}", file!(), line!(), e);
+        eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
     }
 
     println!();
@@ -195,7 +195,7 @@ pub fn init() -> InitData {
                 );
             }
             Err(e) => {
-                println!("{}:{} ERROR: {}", file!(), line!(), e);
+                eprintln!("{}:{} ERROR: {}", file!(), line!(), e);
             }
         },
         false => {
@@ -249,7 +249,7 @@ pub fn init() -> InitData {
             unreachable!()
         }
         Err(e) => {
-            println!("{}:{} ERROR: {}", file!(), line!(), &e.to_string());
+            eprintln!("{}:{} ERROR: {}", file!(), line!(), &e.to_string());
             exit_with_error(Some(String::from(
                 "Couldn't get offsets compat info.",
             )));
@@ -267,7 +267,7 @@ pub fn init() -> InitData {
             unreachable!()
         }
         Err(e) => {
-            println!("{}:{} ERROR: {}", file!(), line!(), &e.to_string());
+            eprintln!("{}:{} ERROR: {}", file!(), line!(), &e.to_string());
             exit_with_error(Some(String::from(
                 "Couldn't get offsets from file.",
             )));
