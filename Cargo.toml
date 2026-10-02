@@ -9,16 +9,16 @@ update-notifier = []
 update-offsets = []
 
 [dependencies]
-anyhow = "1.0.102"
+anyhow = "1.0.104"
 cfg-if = "1.0.4"
-serde = { version = "1.0.228", features = ["derive"] }
+serde = { version = "1.0.229", features = ["derive"] }
 
 serde_yml = "0.0.12" # Used for deserialization of the offsets.
-sysinfo = "0.35.0" # Used for grabbing a correct PID to one of the Souls games.
+sysinfo = "0.39.6" # Used for grabbing a correct PID to one of the Souls games.
 libmem = "5.1.4" # Used for the pointer arithmetic.
 sha2 = "0.11.0" # Used for hashing the offsets.yaml to detect that it potentially needs an update.
 reqwest = { version = "0.12.28", features = ["blocking", "json"] } # Used for update related features.
 directories = "6.0.0" # Used to integrate a platform agnostic data directory for non-portable use.
 
 [target.'cfg(windows)'.dependencies]
-steamlocate = "2.1.0" # Used for locating where the Elden Ring install is and using that to construct a launch option for the user.
+steamlocate = "2.1.1" # Used for locating where the Elden Ring install is and using that to construct a launch option for the user.
