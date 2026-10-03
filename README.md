@@ -1,5 +1,5 @@
 # SBDeaths
-A SoulsBorne death counter. (With Linux Support!)
+A cross-platform (Windows, Linux) soulsborne death counter.
 
 It reads your deaths directly from the game's memory and both prints it to the screen and writes it to a file.
 
@@ -33,9 +33,22 @@ SBDeaths supports every mainline soulsborne game.
 2. Bloodborne. (Need to investigate)
 
 ## Game Updates
-SBDeaths' game compatibility is very volatile, it will *probably* break on every single update pushed for a game.
+~~SBDeaths' game compatibility is volatile, it will *probably* break on every single update pushed for a game.~~
 
-Please report any issues you find [here](https://codeberg.org/misterj05/SBDeaths/issues), ESPECIALLY if there was a game update recently.
+SBDeaths' game compatibility isn't as volatile as it once was. Since the introduction of signature scanning,
+it is less likely for a game update to break SBDeaths. However, it is still possible, so if you have any
+issues please report them [here](https://codeberg.org/misterj05/SBDeaths/issues), ESPECIALLY if there was a game
+update recently.
+
+## Repo Mirrors
+> [!IMPORTANT]
+> This repo is hosted on [Codeberg](https://codeberg.org/misterj05/SBDeaths)
+> and is mirrored onto other forges for discoverability.
+>
+> Issues will get ignored on forges other than Codeberg.
+> PRs might still get merged off-platform via git with authorship preserved.
+> Discussion boards will likely see activity as Codeberg does not have such a feature yet.
+> Overall I would just prefer to work on Codeberg if possible.
 
 ## Credits
 [DSDeaths](https://github.com/Quidrex/DSDeaths) for inspiration and the initial offsets.
