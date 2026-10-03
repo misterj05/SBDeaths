@@ -6,6 +6,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 
 use anyhow::{Result, bail};
+use noyalib::compat::serde_yaml;
 use reqwest::blocking::get;
 use serde::Deserialize;
 
@@ -120,7 +121,7 @@ pub fn verify_offsets_version() -> Result<Option<String>> {
         SBDeaths, if there is an update available for SBDeaths, please update \
         to it. ",
     );
-    match serde_yml::from_slice::<OffsetsFile>(&downloaded_offsets) {
+    match serde_yaml::from_slice::<OffsetsFile>(&downloaded_offsets) {
         Ok(offsets) => {
             if let Some(compat) = offsets.compat {
                 if compat != OFFSETS_COMPAT {

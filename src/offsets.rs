@@ -8,6 +8,7 @@ use std::path::Path;
 
 use anyhow::{Result, bail};
 use libmem::{Arch, Module, Process, read_memory_ex, sig_scan_ex};
+use noyalib::compat::serde_yaml;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -36,7 +37,7 @@ pub fn get_offsets_file<P: AsRef<Path>>(data_path: P) -> Result<OffsetsFile> {
     let data_path = data_path.as_ref();
     let file = File::open(data_path.join("offsets.yaml"))?;
     let reader = BufReader::new(file);
-    let offsets_file: OffsetsFile = serde_yml::de::from_reader(reader)?;
+    let offsets_file: OffsetsFile = serde_yaml::from_reader(reader)?;
     return Ok(offsets_file);
 }
 
@@ -44,7 +45,7 @@ pub fn get_offsets<P: AsRef<Path>>(data_path: P) -> Result<Option<OffsetMap>> {
     let data_path = data_path.as_ref();
     let file = File::open(data_path.join("offsets.yaml"))?;
     let reader = BufReader::new(file);
-    let offsets_file: OffsetsFile = serde_yml::de::from_reader(reader)?;
+    let offsets_file: OffsetsFile = serde_yaml::from_reader(reader)?;
     if let Some(o) = offsets_file.offsets {
         return Ok(Some(o));
     } else {
@@ -56,7 +57,7 @@ pub fn get_offsets_compat<P: AsRef<Path>>(data_path: P) -> Result<Option<u16>> {
     let data_path = data_path.as_ref();
     let file = File::open(data_path.join("offsets.yaml"))?;
     let reader = BufReader::new(file);
-    let offsets_file: OffsetsFile = serde_yml::de::from_reader(reader)?;
+    let offsets_file: OffsetsFile = serde_yaml::from_reader(reader)?;
     if let Some(c) = offsets_file.compat {
         return Ok(Some(c));
     } else {
