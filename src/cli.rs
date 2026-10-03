@@ -116,12 +116,10 @@ pub fn run(
             "Could not find Main Module for Game Process."
         );
 
-        cfg_if::cfg_if! {
-            if #[cfg(debug_assertions)] {
-                dbg!(&main_module.name);
-                dbg!(main_module.base);
-            }
-        }
+        #[cfg(debug_assertions)]
+        dbg!(&main_module.name);
+        #[cfg(debug_assertions)]
+        dbg!(main_module.base);
 
         // Work around libmem's Wine/Proton module size detection
         #[cfg(target_os = "linux")]

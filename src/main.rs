@@ -11,8 +11,8 @@ mod offsets;
 mod startup;
 mod util;
 
-cfg_if::cfg_if! {
-    if #[cfg(any(feature = "update-notifier", feature = "update-offsets"))] {
+cfg_select! {
+    any(feature = "update-notifier", feature = "update-offsets") => {
         mod update;
     }
 }
